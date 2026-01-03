@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Local LLM Summarizer",
+  "version": "0.1.0",
+  "description": "Summarize or analyze web pages using a local OLLAMA LLM.",
+  "permissions": [
+    "scripting",
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://localhost:11434/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "commands": {
+    "toggle-popup": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y"
+      },
+      "description": "Open the LLM popup panel"
+    },
+    "toggle-panel": {
+      "suggested_key": {
+        "default": "Alt+A"
+      },
+      "description": "Toggle the floating LLM panel"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "options_page": "options/options.html"
+}

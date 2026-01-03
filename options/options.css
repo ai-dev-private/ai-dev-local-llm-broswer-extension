@@ -1,0 +1,19 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+h2 {
+  margin-top: 0;
+}
+#endpoint {
+  width: 100%;
+  margin-bottom: 10px;
+}
+#save {
+  width: 100%;
+  padding: 8px;
+}
+#save-status {
+  margin-top: 8px;
+  color: green;
+}
