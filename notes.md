@@ -1,3 +1,12 @@
+# Debugging background script output in Chrome extensions
+
+If you add debug logging to your background.js (service worker) in a Chrome extension, you will NOT see those logs in the content script or popup console. Instead:
+
+1. Go to `chrome://extensions/`
+2. Find your extension and click the “service worker” link under “Inspect views” (or “background page” if you see that).
+3. In the new DevTools window, check the Console tab for your debug logs (e.g., `[Ollama Debug] Request URL:` and `[Ollama Debug] Request Body:`).
+
+This is required because background scripts run in a separate context from content scripts and popups.
 # ollama
 
 ## Shadow DOM (shadow html) notes
@@ -21,4 +30,25 @@
     "think": true
   }
 }
+```
+
+
+# Manual rest API testing
+
+Generate endpoint:   
+```sh
+curl http://localhost:11434/api/generate -d '{
+  "model": "llama3.2",
+  "prompt": "Why is the sky blue?"
+}'
+```
+
+Chat end point:
+```
+curl http://localhost:11434/api/chat -d '{
+  "model": "llama3.2",
+  "messages": [
+    { "role": "user", "content": "why is the sky blue?" }
+  ]
+}'
 ```
