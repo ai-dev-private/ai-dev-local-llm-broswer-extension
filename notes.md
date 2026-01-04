@@ -32,6 +32,24 @@ This is required because background scripts run in a separate context from conte
 }
 ```
 
+# OLLAMA 403 forbidden errors
+http headers with certain origins will be forbidden.  
+For example, it doesn't work for chrome extensions by default.  
+Can quickly test by serving like this:   
+`OLLAMA_DEBUG=1 OLLAMA_ORIGINS="chrome-extension://*" ollama serve`
+or
+```bash
+export OLLAMA_DEBUG=1
+export OLLAMA_ORIGINS="chrome-extension://*"
+ollama serve
+```
+However, this is very permissive.  
+For `development`/`local` usage, you can use a "key" in the manifest v3 file.   
+This will make a specific output extension id, when you load it locally.
+You can then server ollama to only allow that extension.
+
+For `deployement`, it seems ollama doesn't support authentation.   
+So you will need to do authentication through a reverse proxy, like nginx, Caddy, etc.
 
 # Manual rest API testing
 
@@ -52,3 +70,4 @@ curl http://localhost:11434/api/chat -d '{
   ]
 }'
 ```
+

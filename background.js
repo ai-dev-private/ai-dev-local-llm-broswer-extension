@@ -32,14 +32,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const endpoint = result.ollamaEndpoint || 'http://localhost:11434';
         const url = endpoint + '/api/chat';
         const formattedBody = formatOllamaChatRequest(request.body);
+        const stringifiedBody = JSON.stringify(formattedBody);
         if (DEBUG_FLAGS.DEBUG_OLLAMA_REQUEST) {
           console.log('[Ollama Debug] Request URL:', url);
-          console.log('[Ollama Debug] Request Body:', JSON.stringify(formattedBody, null, 2));
+          console.log('[Ollama Debug] Request Body:', stringifiedBody);
         }
         fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formattedBody)
+          body: stringifiedBody
         })
           .then(async (res) => {
             const text = await res.text();
