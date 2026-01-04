@@ -42,16 +42,6 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     return;
   }
 
-  // Inject panel.css if not already present
-  if (!document.getElementById('llm-panel-style')) {
-    console.log('[content.js] Injecting panel.css');
-    const link = document.createElement('link');
-    link.id = 'llm-panel-style';
-    link.rel = 'stylesheet';
-    link.type = 'text/css';
-    link.href = chrome.runtime.getURL('panel.css');
-    document.head.appendChild(link);
-  }
 
   panelDiv = document.createElement('div');
   panelDiv.id = 'llm-extension-panel';
@@ -77,6 +67,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
   panelDiv.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-family:Arial,sans-serif;color:#222;">
       <span style="font-weight:bold;">LLM Panel</span>
+      <span id="ollama-status" style="display:flex;align-items:center;gap:4px;font-size:0.95em;"><span id="ollama-status-dot">⚪</span><span id="ollama-status-text">Checking...</span></span>
       <button id="llm-panel-close" style="font-size:1.1em;background:#f5f5f5;border:1px solid #bbb;border-radius:4px;padding:2px 8px;cursor:pointer;color:#222;">✖</button>
     </div>
     <div style="font-size:0.95em;color:#555;margin-bottom:4px;font-family:Arial,sans-serif;">[shift+enter] = focus, [ctrl+enter] = submit</div>
@@ -84,6 +75,18 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     <button id="llm-panel-send" style="width:100%;margin-bottom:8px;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;">Send</button>
     <div id="llm-panel-response" style="margin-top:8px;font-size:1em;white-space:pre-wrap;min-height:200px;max-height:300px;overflow:auto;font-family:Arial,sans-serif;color:#222;background:#fafafa;border:1px solid #eee;border-radius:4px;padding:8px;"></div>
   `;
+    // OLLAMA status check via background script
+    const statusDot = panelDiv.querySelector('#ollama-status-dot');
+    const statusText = panelDiv.querySelector('#ollama-status-text');
+    chrome.runtime.sendMessage({ action: 'checkOllamaStatus' }, (response) => {
+      if (response && response.status === 'ok') {
+        if (statusDot) statusDot.textContent = '🟢';
+        if (statusText) statusText.textContent = 'Connected to OLLAMA';
+      } else {
+        if (statusDot) statusDot.textContent = '🔴';
+        if (statusText) statusText.textContent = 'OLLAMA not reachable';
+      }
+    });
   document.body.appendChild(panelDiv);
   // Focus the textarea when panel is created
   const promptTextarea = document.getElementById('llm-panel-prompt');

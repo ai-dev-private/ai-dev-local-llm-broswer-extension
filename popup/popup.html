@@ -6,7 +6,10 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div id="status"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <span style="font-weight:bold;">LLM Panel</span>
+    <div id="status" style="font-size:0.95em;"></div>
+  </div>
   <textarea id="prompt" placeholder="Type your prompt here..."></textarea>
   <button id="send">Send</button>
   <button id="toggle-panel">Show/Hide Panel</button>

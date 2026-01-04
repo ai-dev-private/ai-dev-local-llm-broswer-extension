@@ -1,8 +1,16 @@
+console.log('[popup.js] Popup script loaded');
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[popup.js] DOMContentLoaded');
+});
+
 // Handles popup UI and communication with content/background
 const statusDiv = document.getElementById('status');
 const promptInput = document.getElementById('prompt');
 const sendBtn = document.getElementById('send');
 const responseDiv = document.getElementById('response');
+
+console.log('[popup.js] Elements:', { statusDiv, promptInput, sendBtn, responseDiv });
 
 const getOllamaEndpoint = () => {
   return new Promise((resolve) => {
@@ -69,6 +77,11 @@ if (togglePanelBtn) {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     console.log('[popup.js] Sending togglePanel message to tab', tab.id);
     chrome.tabs.sendMessage(tab.id, { action: 'togglePanel' }, (response) => {
+      if (chrome.runtime.lastError) {
+        // Gracefully handle the error if the content script is not present
+        console.warn('[popup.js] Could not toggle panel:', chrome.runtime.lastError.message);
+        return;
+      }
       console.log('[popup.js] togglePanel message sent, response:', response);
     });
   };
