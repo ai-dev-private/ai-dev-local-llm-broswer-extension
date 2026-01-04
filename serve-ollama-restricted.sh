@@ -4,7 +4,7 @@
 # OLLAMA_ORIGINS is required to allow requests from Chrome extensions; without it, you may get 403 Forbidden errors due to the Origin header.
 
 
-export OLLAMA_ORIGINS="chrome-extension://*"
 # Uncomment for verbose server logs:
 # export OLLAMA_DEBUG=1
+export OLLAMA_ORIGINS="chrome-extension://*"
 ollama serve

@@ -132,10 +132,15 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         responseDiv.textContent = 'Error: ' + chrome.runtime.lastError.message;
         return;
       }
-      if (result && result.response) {
+      // Prefer assistant's content if present
+      if (result && result.message && result.message.content) {
+        responseDiv.textContent = result.message.content;
+      } else if (result && result.response) {
         responseDiv.textContent = result.response;
       } else if (result && result.error) {
         responseDiv.textContent = 'Error: ' + result.error;
+      } else if (result) {
+        responseDiv.textContent = JSON.stringify(result, null, 2);
       } else {
         responseDiv.textContent = 'Unknown error or no response.';
       }
