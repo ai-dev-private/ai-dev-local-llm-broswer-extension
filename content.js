@@ -2,7 +2,11 @@
 
 // Function to get the HTML content
 function getPageHTML() {
-  return document.documentElement.outerHTML;
+  // Clone the DOM and remove the panel before extracting HTML
+  const clone = document.documentElement.cloneNode(true);
+  const panel = clone.querySelector('.llm-extension-panel');
+  if (panel) panel.remove();
+  return clone.outerHTML;
 }
 
 // Function to get all inline and external CSS (basic version)
@@ -45,6 +49,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
 
   panelDiv = document.createElement('div');
   panelDiv.id = 'llm-extension-panel';
+  panelDiv.className = 'llm-extension-panel';
   // IMPORTANT: Always set explicit styles for all panel elements to prevent inheritance from the base page.
   // This avoids future CSS issues and ensures consistent appearance across all sites.
   panelDiv.style.position = 'fixed';
