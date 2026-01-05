@@ -38,6 +38,19 @@ function getPageJS() {
 
 // Panel logic (moved from panel.js for compatibility)
 function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
+    // Keyboard shortcut: Alt+Z toggles HTML checkbox
+    function handleAltZToggle(e) {
+      if (e.altKey && (e.key === 'z' || e.key === 'Z')) {
+        const htmlCheckbox = document.getElementById('llm-include-html');
+        if (htmlCheckbox) {
+          htmlCheckbox.checked = !htmlCheckbox.checked;
+          e.preventDefault();
+        }
+      }
+    }
+    window.addEventListener('keydown', handleAltZToggle);
+
+    // Remove the event listener when panel is closed
   console.log('[content.js] createLLMPanel called');
   let panelDiv = document.getElementById('llm-extension-panel');
   if (panelDiv) {
@@ -98,6 +111,14 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         border-radius: 4px;
         padding: 6px;
       }
+      .llm-extension-panel input[type="checkbox"] {
+        appearance: checkbox;
+        -webkit-appearance: checkbox;
+        width: 16px;
+        height: 16px;
+        margin: 0 4px 0 0;
+        vertical-align: middle;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -113,6 +134,12 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     </div>
     <div style="font-size:0.95em;color:#555;margin-bottom:4px;font-family:Arial,sans-serif;">[shift+enter] = focus, [ctrl+enter] = submit</div>
     <textarea id="llm-panel-prompt" style="width:100%;height:80px;resize:vertical;margin-bottom:8px;font-family:Arial,sans-serif;font-size:1em;color:#222;background:#fff;border:1px solid #bbb;border-radius:4px;padding:6px;"></textarea>
+    <div style="margin-bottom:8px;display:flex;gap:12px;align-items:center;">
+      <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-html" checked style="margin-right:4px;">HTML</label>
+      <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-css" checked style="margin-right:4px;">CSS</label>
+      <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-js" checked style="margin-right:4px;">JS</label>
+      <span style="font-size:0.85em;color:#888;">Include in prompt</span>
+    </div>
     <button id="llm-panel-send" style="width:100%;margin-bottom:8px;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;">Send</button>
     <div id="llm-panel-response" style="margin-top:8px;font-size:1em;white-space:pre-wrap;min-height:200px;max-height:300px;overflow:auto;font-family:Arial,sans-serif;color:#222;background:#fafafa;border:1px solid #eee;border-radius:4px;padding:8px;"></div>
   `;
@@ -172,17 +199,24 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     console.log('[content.js] Panel closed');
     panelDiv.remove();
     window.removeEventListener('keydown', globalKeyHandler);
+    window.removeEventListener('keydown', handleAltZToggle);
   };
 
   document.getElementById('llm-panel-send').onclick = async () => {
     const prompt = promptTextarea.value;
     if (!prompt) return;
-    // Extract page data
-    const html = getPageHTML();
-    const css = getPageCSS();
-    const js = getPageJS();
+    // Check which data to include
+    const includeHTML = document.getElementById('llm-include-html').checked;
+    const includeCSS = document.getElementById('llm-include-css').checked;
+    const includeJS = document.getElementById('llm-include-js').checked;
+    const html = includeHTML ? getPageHTML() : undefined;
+    const css = includeCSS ? getPageCSS() : undefined;
+    const js = includeJS ? getPageJS() : undefined;
     const model = modelSelect.value;
-    const requestBody = { prompt, html, css, js, model };
+    const requestBody = { prompt, model };
+    if (includeHTML) requestBody.html = html;
+    if (includeCSS) requestBody.css = css;
+    if (includeJS) requestBody.js = js;
     const responseDiv = document.getElementById('llm-panel-response');
     responseDiv.textContent = '⏳ Waiting for response...';
     chrome.runtime.sendMessage({ action: 'ollamaGenerate', body: requestBody }, (result) => {
