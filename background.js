@@ -5,7 +5,10 @@ function formatOllamaChatRequest(body) {
     return body;
   }
   // Otherwise, convert prompt/html/css/js to a single content string
-  const model = 'deepseek-r1:1.5b';
+  if (!body.model) {
+    return { error: 'No model selected. Please select a model from the dropdown.' };
+  }
+  const model = body.model;
   let content = body.prompt || '';
   if (body.html || body.css || body.js) {
     content += '\n\nHTML:\n' + (body.html || '') + '\n\nCSS:\n' + (body.css || '') + '\n\nJS:\n' + (body.js || '');
@@ -27,6 +30,28 @@ function formatOllamaChatRequest(body) {
 import * as DEBUG_FLAGS from './globals.js';
 // Listen for OLLAMA status check requests from content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'getOllamaModels') {
+    chrome.storage.sync.get(['ollamaEndpoint'], (result) => {
+      const endpoint = result.ollamaEndpoint || 'http://localhost:11434';
+      fetch(endpoint + '/api/tags')
+        .then(async (res) => {
+          try {
+            const data = await res.json();
+            // Ollama returns { models: [{ name: 'modelname', ... }, ...] }
+            const models = Array.isArray(data.models)
+              ? data.models.map(m => m.name)
+              : [];
+            sendResponse({ models });
+          } catch (e) {
+            sendResponse({ models: [], error: 'Invalid JSON from Ollama' });
+          }
+        })
+        .catch((err) => {
+          sendResponse({ models: [], error: err.message });
+        });
+    });
+    return true;
+  }
     if (request.action === 'ollamaGenerate') {
       chrome.storage.sync.get(['ollamaEndpoint'], (result) => {
         const endpoint = result.ollamaEndpoint || 'http://localhost:11434';

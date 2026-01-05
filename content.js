@@ -75,11 +75,31 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
       <span id="ollama-status" style="display:flex;align-items:center;gap:4px;font-size:0.95em;"><span id="ollama-status-dot">⚪</span><span id="ollama-status-text">Checking...</span></span>
       <button id="llm-panel-close" style="font-size:1.1em;background:#f5f5f5;border:1px solid #bbb;border-radius:4px;padding:2px 8px;cursor:pointer;color:#222;">✖</button>
     </div>
+    <div style="margin-bottom:8px;">
+      <label for="llm-model-select" style="font-size:0.95em;color:#222;margin-right:8px;">Model:</label>
+      <select id="llm-model-select" style="font-size:1em;padding:2px 8px;border-radius:4px;border:1px solid #bbb;"></select>
+    </div>
     <div style="font-size:0.95em;color:#555;margin-bottom:4px;font-family:Arial,sans-serif;">[shift+enter] = focus, [ctrl+enter] = submit</div>
     <textarea id="llm-panel-prompt" style="width:100%;height:80px;resize:vertical;margin-bottom:8px;font-family:Arial,sans-serif;font-size:1em;color:#222;background:#fff;border:1px solid #bbb;border-radius:4px;padding:6px;"></textarea>
     <button id="llm-panel-send" style="width:100%;margin-bottom:8px;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;">Send</button>
     <div id="llm-panel-response" style="margin-top:8px;font-size:1em;white-space:pre-wrap;min-height:200px;max-height:300px;overflow:auto;font-family:Arial,sans-serif;color:#222;background:#fafafa;border:1px solid #eee;border-radius:4px;padding:8px;"></div>
   `;
+      // Fetch models from Ollama and populate dropdown
+      const modelSelect = panelDiv.querySelector('#llm-model-select');
+      modelSelect.innerHTML = '<option>Loading...</option>';
+      chrome.runtime.sendMessage({ action: 'getOllamaModels' }, (response) => {
+        if (response && response.models && Array.isArray(response.models)) {
+          modelSelect.innerHTML = '';
+          response.models.forEach(model => {
+            const opt = document.createElement('option');
+            opt.value = model;
+            opt.textContent = model;
+            modelSelect.appendChild(opt);
+          });
+        } else {
+          modelSelect.innerHTML = '<option>Error loading models</option>';
+        }
+      });
     // OLLAMA status check via background script
     const statusDot = panelDiv.querySelector('#ollama-status-dot');
     const statusText = panelDiv.querySelector('#ollama-status-text');
@@ -129,7 +149,8 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     const html = getPageHTML();
     const css = getPageCSS();
     const js = getPageJS();
-    const requestBody = { prompt, html, css, js };
+    const model = modelSelect.value;
+    const requestBody = { prompt, html, css, js, model };
     const responseDiv = document.getElementById('llm-panel-response');
     responseDiv.textContent = '⏳ Waiting for response...';
     chrome.runtime.sendMessage({ action: 'ollamaGenerate', body: requestBody }, (result) => {
