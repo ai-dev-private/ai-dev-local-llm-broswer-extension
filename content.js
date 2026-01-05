@@ -38,18 +38,34 @@ function getPageJS() {
 
 // Panel logic (moved from panel.js for compatibility)
 function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
-    // Keyboard shortcut: Alt+Z toggles HTML checkbox
-    function handleAltZToggle(e) {
-      if (e.altKey && (e.key === 'z' || e.key === 'Z')) {
-        const htmlCheckbox = document.getElementById('llm-include-html');
-        if (htmlCheckbox) {
-          htmlCheckbox.checked = !htmlCheckbox.checked;
-          e.preventDefault();
+    // Keyboard shortcuts:
+    // Alt+Z toggles HTML checkbox
+    // Alt+X toggles CSS checkbox
+    // Alt+C toggles JS checkbox
+    function handlePanelCheckboxShortcuts(e) {
+      if (e.altKey) {
+        if (e.key === 'z' || e.key === 'Z') {
+          const htmlCheckbox = document.getElementById('llm-include-html');
+          if (htmlCheckbox) {
+            htmlCheckbox.checked = !htmlCheckbox.checked;
+            e.preventDefault();
+          }
+        } else if (e.key === 'x' || e.key === 'X') {
+          const cssCheckbox = document.getElementById('llm-include-css');
+          if (cssCheckbox) {
+            cssCheckbox.checked = !cssCheckbox.checked;
+            e.preventDefault();
+          }
+        } else if (e.key === 'c' || e.key === 'C') {
+          const jsCheckbox = document.getElementById('llm-include-js');
+          if (jsCheckbox) {
+            jsCheckbox.checked = !jsCheckbox.checked;
+            e.preventDefault();
+          }
         }
       }
     }
-    window.addEventListener('keydown', handleAltZToggle);
-
+    window.addEventListener('keydown', handlePanelCheckboxShortcuts);
     // Remove the event listener when panel is closed
   console.log('[content.js] createLLMPanel called');
   let panelDiv = document.getElementById('llm-extension-panel');
@@ -199,7 +215,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     console.log('[content.js] Panel closed');
     panelDiv.remove();
     window.removeEventListener('keydown', globalKeyHandler);
-    window.removeEventListener('keydown', handleAltZToggle);
+    window.removeEventListener('keydown', handlePanelCheckboxShortcuts);
   };
 
   document.getElementById('llm-panel-send').onclick = async () => {
