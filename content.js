@@ -46,7 +46,6 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     return;
   }
 
-
   panelDiv = document.createElement('div');
   panelDiv.id = 'llm-extension-panel';
   panelDiv.className = 'llm-extension-panel';
@@ -69,6 +68,39 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
   panelDiv.style.gap = '8px';
   panelDiv.style.fontFamily = 'Arial, sans-serif';
   panelDiv.style.color = '#222';
+  // Inject CSS reset to prevent site CSS from affecting the panel
+  if (!document.getElementById('llm-extension-panel-style')) {
+    const style = document.createElement('style');
+    style.id = 'llm-extension-panel-style';
+    style.textContent = `
+      .llm-extension-panel * {
+        all: unset;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+        color: #222;
+      }
+      .llm-extension-panel {
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+        color: #222;
+      }
+      .llm-extension-panel textarea {
+        width: 100%;
+        min-height: 80px;
+        height: 80px;
+        resize: vertical;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
+        font-size: 1em;
+        color: #222;
+        background: #fff;
+        border: 1px solid #bbb;
+        border-radius: 4px;
+        padding: 6px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
   panelDiv.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-family:Arial,sans-serif;color:#222;">
       <span style="font-weight:bold;">LLM Panel</span>
