@@ -139,30 +139,29 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     document.head.appendChild(style);
   }
   panelDiv.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-family:Arial,sans-serif;color:#222;">
-      <span style="font-weight:bold;">LLM Panel</span>
-      <span id="ollama-status" style="display:flex;align-items:center;gap:4px;font-size:0.95em;"><span id="ollama-status-dot">⚪</span><span id="ollama-status-text">Checking...</span></span>
-      <button id="llm-panel-close" style="font-size:1.1em;background:#f5f5f5;border:1px solid #bbb;border-radius:4px;padding:2px 8px;cursor:pointer;color:#222;">✖</button>
-    </div>
-    <div style="margin-bottom:8px;">
-      <label for="llm-model-select" style="font-size:0.95em;color:#222;margin-right:8px;">Model:</label>
-      <select id="llm-model-select" style="font-size:1em;padding:2px 8px;border-radius:4px;border:1px solid #bbb;"></select>
-    </div>
-    <div style="font-size:0.95em;color:#555;margin-bottom:4px;font-family:Arial,sans-serif;display:flex;align-items:center;gap:6px;">
-      <span 
-        style="display:flex;align-items:center;gap:6px;cursor:help;"
-        title="[Shift+Enter] = focus\n[Ctrl+Enter] = submit\n[Alt+Z] = toggle HTML\n[Alt+X] = toggle CSS\n[Alt+C] = toggle JS"
-      >
-        <span>Keybinds</span>
-        <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#e0e0e0;color:#555;text-align:center;line-height:18px;font-weight:bold;">?</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;font-family:Arial,sans-serif;color:#222;gap:6px;">
+      <span id="ollama-status" style="font-size:0.78em;display:flex;align-items:center;gap:4px;white-space:nowrap;">
+        <span id="ollama-status-dot">⚪</span>
+        <span id="ollama-status-text">OLLAMA connected</span>
       </span>
+      <label for="llm-model-select" style="font-size:0.95em;color:#222;margin:0 4px 0 8px;white-space:nowrap;">Model:</label>
+      <select id="llm-model-select" style="font-size:1em;padding:2px 8px;border-radius:4px;border:1px solid #bbb;margin-right:8px;max-width:120px;"></select>
+      <button id="llm-panel-close" style="font-size:0.85em;background:#f5f5f5;border:1px solid #bbb;border-radius:4px;padding:1px 5px;cursor:pointer;color:#222;line-height:1;">✖</button>
     </div>
+    <div style="height:2px;"></div>
     <textarea id="llm-panel-prompt" style="width:100%;height:80px;resize:vertical;margin-bottom:8px;font-family:Arial,sans-serif;font-size:1em;color:#222;background:#fff;border:1px solid #bbb;border-radius:4px;padding:6px;"></textarea>
     <div style="margin-bottom:8px;display:flex;gap:12px;align-items:center;">
       <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-html" style="margin-right:4px;">HTML</label>
       <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-css" style="margin-right:4px;">CSS</label>
       <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-js" style="margin-right:4px;">JS</label>
       <span style="font-size:0.85em;color:#888;">Include in prompt</span>
+      <span 
+        style="display:flex;align-items:center;gap:6px;cursor:help;font-size:0.95em;"
+        title="[Shift+Enter] = focus\n[Ctrl+Enter] = submit\n[Alt+Z] = toggle HTML\n[Alt+X] = toggle CSS\n[Alt+C] = toggle JS"
+      >
+        <span>Keybinds</span>
+        <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#e0e0e0;color:#555;text-align:center;line-height:16px;font-weight:bold;margin-left:2px;">?</span>
+      </span>
     </div>
     <button id="llm-panel-send" style="width:100%;margin-bottom:8px;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;">Send</button>
     <div id="llm-panel-response" style="margin-top:8px;font-size:1em;white-space:pre-wrap;min-height:200px;max-height:300px;overflow:auto;font-family:Arial,sans-serif;color:#222;background:#fafafa;border:1px solid #eee;border-radius:4px;padding:8px;"></div>
