@@ -1,3 +1,34 @@
+// --- OLLAMA status notification logic ---
+let lastOllamaStatus = 'unknown';
+function checkOllamaAndNotifyTabs() {
+  chrome.storage.sync.get(['ollamaEndpoint'], (result) => {
+    const endpoint = result.ollamaEndpoint || 'http://localhost:11434';
+    fetch(endpoint + '/api/tags')
+      .then(res => {
+        const newStatus = res.ok ? 'ok' : 'fail';
+        if (lastOllamaStatus !== newStatus && newStatus === 'ok') {
+          // Notify all tabs that OLLAMA is now available
+          chrome.tabs.query({}, function(tabs) {
+            for (let tab of tabs) {
+              chrome.tabs.sendMessage(tab.id, { action: 'ollamaStatusChanged', status: 'connected' });
+            }
+          });
+        }
+        lastOllamaStatus = newStatus;
+      })
+      .catch(() => {
+        lastOllamaStatus = 'fail';
+      });
+  });
+}
+
+// Listen for explicit OLLAMA status re-check requests
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'recheckOllamaStatus') {
+    checkOllamaAndNotifyTabs();
+    sendResponse({ status: 'rechecking' });
+  }
+});
 // Format incoming data to Ollama chat API format
 function formatOllamaChatRequest(body) {
   // If already in chat format, just return as-is

@@ -1,3 +1,13 @@
+// Listen for OLLAMA status change notifications from background
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'ollamaStatusChanged' && message.status === 'connected') {
+    // Update the status indicator in the panel if it exists
+    const statusDot = document.getElementById('ollama-status-dot');
+    const statusText = document.getElementById('ollama-status-text');
+    if (statusDot) statusDot.textContent = '🟢';
+    if (statusText) statusText.textContent = 'Connected to OLLAMA';
+  }
+});
 // Content script: Extracts DOM, CSS, and JS from the current page
 
 // Function to get the HTML content
@@ -149,7 +159,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
       <button id="llm-panel-close" style="font-size:0.85em;background:#f5f5f5;border:1px solid #bbb;border-radius:4px;padding:1px 5px;cursor:pointer;color:#222;line-height:1;">✖</button>
     </div>
     <div style="height:2px;"></div>
-    <div id="llm-panel-response" style="margin-top:8px;font-size:1em;white-space:pre-wrap;min-height:200px;max-height:300px;overflow:auto;font-family:Arial,sans-serif;color:#222;background:#fafafa;border:1px solid #eee;border-radius:4px;padding:8px;"></div>
+    <div id="llm-message-stream" style="flex:1 1 auto;min-height:120px;max-height:220px;overflow-y:auto;padding:8px 2px 8px 2px;display:flex;flex-direction:column;gap:10px;background:#fafafa;border:1px solid #eee;border-radius:4px;margin-bottom:8px;"></div>
     <textarea id="llm-panel-prompt" style="width:100%;height:80px;resize:vertical;margin-bottom:8px;font-family:Arial,sans-serif;font-size:1em;color:#222;background:#fff;border:1px solid #bbb;border-radius:4px;padding:6px;"></textarea>
     <div style="margin-bottom:8px;display:flex;gap:12px;align-items:center;">
       <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-html" style="margin-right:4px;">HTML</label>
@@ -166,6 +176,60 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     </div>
     <button id="llm-panel-send" style="width:100%;margin-bottom:8px;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;">Send</button>
   `;
+        // --- Chat message stream logic ---
+        const messageStream = panelDiv.querySelector('#llm-message-stream');
+        let chatHistory = [];
+        function renderMessages() {
+          messageStream.innerHTML = '';
+          chatHistory.forEach(msg => {
+            const msgDiv = document.createElement('div');
+            if (msg.role === 'user') {
+              msgDiv.style.alignSelf = 'flex-end';
+              msgDiv.style.background = '#007aff';
+              msgDiv.style.color = '#fff';
+              msgDiv.style.borderRadius = '16px 16px 4px 16px';
+              msgDiv.style.padding = '10px 14px';
+              msgDiv.style.maxWidth = '80%';
+              msgDiv.style.margin = '2px 0';
+              msgDiv.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+              msgDiv.style.fontSize = '1em';
+              msgDiv.style.wordBreak = 'break-word';
+              // Badge area for future use
+              const badgeRow = document.createElement('div');
+              badgeRow.style.display = 'flex';
+              badgeRow.style.gap = '6px';
+              badgeRow.style.marginBottom = '2px';
+              if (msg.badges && msg.badges.length) {
+                msg.badges.forEach(badge => {
+                  const badgeEl = document.createElement('span');
+                  badgeEl.textContent = badge;
+                  badgeEl.style.background = '#fff';
+                  badgeEl.style.color = '#007aff';
+                  badgeEl.style.fontSize = '0.8em';
+                  badgeEl.style.padding = '2px 6px';
+                  badgeEl.style.borderRadius = '8px';
+                  badgeEl.style.marginRight = '4px';
+                  badgeRow.appendChild(badgeEl);
+                });
+              }
+              if (badgeRow.childNodes.length) msgDiv.appendChild(badgeRow);
+            } else {
+              msgDiv.style.alignSelf = 'flex-start';
+              msgDiv.style.background = '#fff';
+              msgDiv.style.color = '#222';
+              msgDiv.style.borderRadius = '16px 16px 16px 4px';
+              msgDiv.style.padding = '10px 14px';
+              msgDiv.style.maxWidth = '80%';
+              msgDiv.style.margin = '2px 0';
+              msgDiv.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+              msgDiv.style.fontSize = '1em';
+              msgDiv.style.wordBreak = 'break-word';
+            }
+            msgDiv.textContent += msg.content;
+            messageStream.appendChild(msgDiv);
+          });
+          messageStream.scrollTop = messageStream.scrollHeight;
+        }
       // Fetch models from Ollama and populate dropdown
       const modelSelect = panelDiv.querySelector('#llm-model-select');
       modelSelect.innerHTML = '<option>Loading...</option>';
@@ -236,29 +300,39 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     const css = includeCSS ? getPageCSS() : undefined;
     const js = includeJS ? getPageJS() : undefined;
     const model = modelSelect.value;
+    // Add user message to chat history and render
+    const userMsg = { role: 'user', content: prompt, badges: [] };
+    if (includeHTML) userMsg.badges.push('HTML');
+    if (includeCSS) userMsg.badges.push('CSS');
+    if (includeJS) userMsg.badges.push('JS');
+    chatHistory.push(userMsg);
+    renderMessages();
+    promptTextarea.value = '';
+    // Add a placeholder for LLM response
+    chatHistory.push({ role: 'llm', content: '⏳ Waiting for response...' });
+    renderMessages();
+    const llmIndex = chatHistory.length - 1;
     const requestBody = { prompt, model };
     if (includeHTML) requestBody.html = html;
     if (includeCSS) requestBody.css = css;
     if (includeJS) requestBody.js = js;
-    const responseDiv = document.getElementById('llm-panel-response');
-    responseDiv.textContent = '⏳ Waiting for response...';
     chrome.runtime.sendMessage({ action: 'ollamaGenerate', body: requestBody }, (result) => {
+      let llmContent = '';
       if (chrome.runtime.lastError) {
-        responseDiv.textContent = 'Error: ' + chrome.runtime.lastError.message;
-        return;
-      }
-      // Prefer assistant's content if present
-      if (result && result.message && result.message.content) {
-        responseDiv.textContent = result.message.content;
+        llmContent = 'Error: ' + chrome.runtime.lastError.message;
+      } else if (result && result.message && result.message.content) {
+        llmContent = result.message.content;
       } else if (result && result.response) {
-        responseDiv.textContent = result.response;
+        llmContent = result.response;
       } else if (result && result.error) {
-        responseDiv.textContent = 'Error: ' + result.error;
+        llmContent = 'Error: ' + result.error;
       } else if (result) {
-        responseDiv.textContent = JSON.stringify(result, null, 2);
+        llmContent = JSON.stringify(result, null, 2);
       } else {
-        responseDiv.textContent = 'Unknown error or no response.';
+        llmContent = 'Unknown error or no response.';
       }
+      chatHistory[llmIndex].content = llmContent;
+      renderMessages();
       console.log('[content.js] OLLAMA response:', result);
     });
   };
