@@ -148,12 +148,20 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
       <label for="llm-model-select" style="font-size:0.95em;color:#222;margin-right:8px;">Model:</label>
       <select id="llm-model-select" style="font-size:1em;padding:2px 8px;border-radius:4px;border:1px solid #bbb;"></select>
     </div>
-    <div style="font-size:0.95em;color:#555;margin-bottom:4px;font-family:Arial,sans-serif;">[shift+enter] = focus, [ctrl+enter] = submit</div>
+    <div style="font-size:0.95em;color:#555;margin-bottom:4px;font-family:Arial,sans-serif;display:flex;align-items:center;gap:6px;">
+      <span 
+        style="display:flex;align-items:center;gap:6px;cursor:help;"
+        title="[Shift+Enter] = focus\n[Ctrl+Enter] = submit\n[Alt+Z] = toggle HTML\n[Alt+X] = toggle CSS\n[Alt+C] = toggle JS"
+      >
+        <span>Keybinds</span>
+        <span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:#e0e0e0;color:#555;text-align:center;line-height:18px;font-weight:bold;">?</span>
+      </span>
+    </div>
     <textarea id="llm-panel-prompt" style="width:100%;height:80px;resize:vertical;margin-bottom:8px;font-family:Arial,sans-serif;font-size:1em;color:#222;background:#fff;border:1px solid #bbb;border-radius:4px;padding:6px;"></textarea>
     <div style="margin-bottom:8px;display:flex;gap:12px;align-items:center;">
-      <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-html" checked style="margin-right:4px;">HTML</label>
-      <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-css" checked style="margin-right:4px;">CSS</label>
-      <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-js" checked style="margin-right:4px;">JS</label>
+      <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-html" style="margin-right:4px;">HTML</label>
+      <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-css" style="margin-right:4px;">CSS</label>
+      <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-js" style="margin-right:4px;">JS</label>
       <span style="font-size:0.85em;color:#888;">Include in prompt</span>
     </div>
     <button id="llm-panel-send" style="width:100%;margin-bottom:8px;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;">Send</button>
