@@ -149,6 +149,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
       <button id="llm-panel-close" style="font-size:0.85em;background:#f5f5f5;border:1px solid #bbb;border-radius:4px;padding:1px 5px;cursor:pointer;color:#222;line-height:1;">✖</button>
     </div>
     <div style="height:2px;"></div>
+    <div id="llm-panel-response" style="margin-top:8px;font-size:1em;white-space:pre-wrap;min-height:200px;max-height:300px;overflow:auto;font-family:Arial,sans-serif;color:#222;background:#fafafa;border:1px solid #eee;border-radius:4px;padding:8px;"></div>
     <textarea id="llm-panel-prompt" style="width:100%;height:80px;resize:vertical;margin-bottom:8px;font-family:Arial,sans-serif;font-size:1em;color:#222;background:#fff;border:1px solid #bbb;border-radius:4px;padding:6px;"></textarea>
     <div style="margin-bottom:8px;display:flex;gap:12px;align-items:center;">
       <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-html" style="margin-right:4px;">HTML</label>
@@ -164,7 +165,6 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
       </span>
     </div>
     <button id="llm-panel-send" style="width:100%;margin-bottom:8px;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;">Send</button>
-    <div id="llm-panel-response" style="margin-top:8px;font-size:1em;white-space:pre-wrap;min-height:200px;max-height:300px;overflow:auto;font-family:Arial,sans-serif;color:#222;background:#fafafa;border:1px solid #eee;border-radius:4px;padding:8px;"></div>
   `;
       // Fetch models from Ollama and populate dropdown
       const modelSelect = panelDiv.querySelector('#llm-model-select');
