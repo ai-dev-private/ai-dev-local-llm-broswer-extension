@@ -6,11 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Handles popup UI and communication with content/background
 const statusDiv = document.getElementById('status');
-const promptInput = document.getElementById('prompt');
-const sendBtn = document.getElementById('send');
 const responseDiv = document.getElementById('response');
 
-console.log('[popup.js] Elements:', { statusDiv, promptInput, sendBtn, responseDiv });
+console.log('[popup.js] Elements:', { statusDiv, responseDiv });
 
 const getOllamaEndpoint = () => {
   return new Promise((resolve) => {
@@ -33,37 +31,7 @@ const checkOllamaConnection = async (endpoint) => {
   }
 };
 
-const sendToOllama = async (data, prompt, endpoint) => {
-  // Example: send as JSON to OLLAMA
-  const body = {
-    prompt,
-    html: data.html,
-    css: data.css,
-    js: data.js
-  };
-  const res = await fetch(endpoint + '/api/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  return res.json();
-};
-
-sendBtn.onclick = async () => {
-  const prompt = promptInput.value;
-  if (!prompt) return;
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  chrome.tabs.sendMessage(tab.id, { action: 'extractPageData' }, async (data) => {
-    const endpoint = await getOllamaEndpoint();
-    responseDiv.textContent = '⏳ Waiting for response...';
-    try {
-      const result = await sendToOllama(data, prompt, endpoint);
-      responseDiv.textContent = result.response || JSON.stringify(result);
-    } catch (e) {
-      responseDiv.textContent = 'Error communicating with OLLAMA.';
-    }
-  });
-};
+// Chat input and send button logic removed
 
 
 // On load, check connection
