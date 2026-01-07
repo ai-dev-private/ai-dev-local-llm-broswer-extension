@@ -95,7 +95,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
   panelDiv.style.left = 'unset';
   panelDiv.style.right = '20px';
   panelDiv.style.width = '420px';
-  panelDiv.style.height = '480px';
+  panelDiv.style.height = '90vh';
   panelDiv.style.background = 'white';
   panelDiv.style.border = '2px solid #888';
   panelDiv.style.zIndex = '999999';
@@ -159,7 +159,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
       <button id="llm-panel-close" style="font-size:0.85em;background:#f5f5f5;border:1px solid #bbb;border-radius:4px;padding:1px 5px;cursor:pointer;color:#222;line-height:1;">✖</button>
     </div>
     <div style="height:2px;"></div>
-    <div id="llm-message-stream" style="flex:1 1 auto;min-height:120px;max-height:220px;overflow-y:auto;padding:8px 2px 8px 2px;display:flex;flex-direction:column;gap:10px;background:#fafafa;border:1px solid #eee;border-radius:4px;margin-bottom:8px;"></div>
+    <div id="llm-message-stream" style="flex:1 1 auto;min-height:0;overflow-y:auto;padding:8px 2px 8px 2px;display:flex;flex-direction:column;gap:10px;background:#fafafa;border:1px solid #eee;border-radius:4px;margin-bottom:8px;"></div>
     <textarea id="llm-panel-prompt" style="width:100%;height:80px;resize:vertical;margin-bottom:8px;font-family:Arial,sans-serif;font-size:1em;color:#222;background:#fff;border:1px solid #bbb;border-radius:4px;padding:6px;"></textarea>
     <div style="margin-bottom:8px;display:flex;gap:12px;align-items:center;">
       <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-html" style="margin-right:4px;">HTML</label>
