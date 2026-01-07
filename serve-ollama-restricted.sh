@@ -6,5 +6,5 @@
 
 # Uncomment for verbose server logs:
 # export OLLAMA_DEBUG=1
-export OLLAMA_ORIGINS="chrome-extension://*"
+export OLLAMA_ORIGINS="chrome-extension://chlkbfbomiilniiejnjfcaaomhckdpnb"
 ollama serve
