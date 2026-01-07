@@ -104,7 +104,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
   panelDiv.style.padding = '12px';
   panelDiv.style.display = 'flex';
   panelDiv.style.flexDirection = 'column';
-  panelDiv.style.gap = '8px';
+  panelDiv.style.gap = '8px'; 
   panelDiv.style.fontFamily = 'Arial, sans-serif';
   panelDiv.style.color = '#222';
   // Inject CSS reset to prevent site CSS from affecting the panel
@@ -178,7 +178,19 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
   `;
         // --- Chat message stream logic ---
         const messageStream = panelDiv.querySelector('#llm-message-stream');
+        // Load chat history from localStorage (per origin)
         let chatHistory = [];
+        try {
+          chatHistory = JSON.parse(localStorage.getItem('llmChatHistory') || '[]');
+          console.log('[llm] Loaded chatHistory from localStorage:', chatHistory);
+        } catch (e) {
+          chatHistory = [];
+          console.warn('[llm] Failed to load chatHistory from localStorage:', e);
+        }
+        function saveHistory() {
+          localStorage.setItem('llmChatHistory', JSON.stringify(chatHistory));
+          console.log('[llm] Saved chatHistory to localStorage:', chatHistory);
+        }
         function renderMessages() {
           messageStream.innerHTML = '';
           chatHistory.forEach(msg => {
@@ -230,6 +242,8 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
           });
           messageStream.scrollTop = messageStream.scrollHeight;
         }
+      // After messageStream and chatHistory are initialized, render chat history
+      renderMessages();
       // Fetch models from Ollama and populate dropdown
       const modelSelect = panelDiv.querySelector('#llm-model-select');
       modelSelect.innerHTML = '<option>Loading...</option>';
@@ -306,13 +320,20 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     if (includeCSS) userMsg.badges.push('CSS');
     if (includeJS) userMsg.badges.push('JS');
     chatHistory.push(userMsg);
+    console.log('[llm] Added user message:', userMsg);
+    saveHistory();
     renderMessages();
     promptTextarea.value = '';
     // Add a placeholder for LLM response
-    chatHistory.push({ role: 'llm', content: '⏳ Waiting for response...' });
+    const llmMsg = { role: 'assistant', content: '⏳ Waiting for response...' };
+    chatHistory.push(llmMsg);
+    console.log('[llm] Added LLM placeholder message:', llmMsg);
+    saveHistory();
     renderMessages();
     const llmIndex = chatHistory.length - 1;
-    const requestBody = { prompt, model };
+    // Build messages array for Ollama
+    const messages = chatHistory.map(m => ({ role: m.role, content: m.content }));
+    const requestBody = { model, messages, stream: false };
     if (includeHTML) requestBody.html = html;
     if (includeCSS) requestBody.css = css;
     if (includeJS) requestBody.js = js;
@@ -332,6 +353,8 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         llmContent = 'Unknown error or no response.';
       }
       chatHistory[llmIndex].content = llmContent;
+      console.log('[llm] Updated LLM message:', chatHistory[llmIndex]);
+      saveHistory();
       renderMessages();
       console.log('[content.js] OLLAMA response:', result);
     });
