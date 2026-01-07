@@ -256,6 +256,10 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         }
       // After messageStream and chatHistory are initialized, render chat history
       renderMessages();
+      // Ensure scroll to bottom after DOM update
+      setTimeout(() => {
+        messageStream.scrollTop = messageStream.scrollHeight;
+      }, 0);
       // Fetch models from Ollama and populate dropdown
       const modelSelect = panelDiv.querySelector('#llm-model-select');
       modelSelect.innerHTML = '<option>Loading...</option>';
