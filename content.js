@@ -174,22 +174,34 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#e0e0e0;color:#555;text-align:center;line-height:16px;font-weight:bold;margin-left:2px;">?</span>
       </span>
     </div>
-    <button id="llm-panel-send" style="width:100%;margin-bottom:8px;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;">Send</button>
-  `;
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <button id="llm-panel-send" style="flex:1 1 auto;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;">Send</button>
+      <button id="llm-panel-clear" style="flex:0 0 auto;background:#fff0f0;border:1px solid #e88;border-radius:4px;padding:8px 12px;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#a00;">Clear Chat</button>
+    </div>
+    `;
+    // Add event listener for Clear Chat button (after panelDiv.innerHTML is set)
+    const clearBtn = panelDiv.querySelector('#llm-panel-clear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        localStorage.removeItem('llmChatHistory');
+        chatHistory = [];
+        renderMessages();
+      });
+    }
         // --- Chat message stream logic ---
         const messageStream = panelDiv.querySelector('#llm-message-stream');
         // Load chat history from localStorage (per origin)
         let chatHistory = [];
         try {
           chatHistory = JSON.parse(localStorage.getItem('llmChatHistory') || '[]');
-          console.log('[llm] Loaded chatHistory from localStorage:', chatHistory);
+          // console.log('[llm] Loaded chatHistory from localStorage:', chatHistory);
         } catch (e) {
           chatHistory = [];
-          console.warn('[llm] Failed to load chatHistory from localStorage:', e);
+          // console.warn('[llm] Failed to load chatHistory from localStorage:', e);
         }
         function saveHistory() {
           localStorage.setItem('llmChatHistory', JSON.stringify(chatHistory));
-          console.log('[llm] Saved chatHistory to localStorage:', chatHistory);
+          // console.log('[llm] Saved chatHistory to localStorage:', chatHistory);
         }
         function renderMessages() {
           messageStream.innerHTML = '';
@@ -347,8 +359,6 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         llmContent = result.response;
       } else if (result && result.error) {
         llmContent = 'Error: ' + result.error;
-      } else if (result) {
-        llmContent = JSON.stringify(result, null, 2);
       } else {
         llmContent = 'Unknown error or no response.';
       }
