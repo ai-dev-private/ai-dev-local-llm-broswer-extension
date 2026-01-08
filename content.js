@@ -203,6 +203,28 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
           localStorage.setItem('llmChatHistory', JSON.stringify(chatHistory));
           // console.log('[llm] Saved chatHistory to localStorage:', chatHistory);
         }
+        // --- Inject marked and DOMPurify if not already present ---
+        // Injects an external script into the page's main world (no inline code)
+        function injectScriptIfNeeded(src, globalName, callback) {
+          if (window[globalName]) {
+            console.log(`[LLM LibraryLoading] ${globalName} already present on window.`);
+            callback();
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = chrome.runtime.getURL(src);
+          script.onload = () => {
+            console.log(`[LLM LibraryLoading] Loaded script: ${src}, window.${globalName}:`, typeof window[globalName]);
+            callback();
+          };
+          script.onerror = (e) => {
+            console.error(`[LLM LibraryLoading] Failed to load script: ${src}`, e);
+          };
+          (document.documentElement || document.head).appendChild(script);
+          console.log(`[LLM LibraryLoading] Injecting script: ${src}`);
+        }
+
+        // Render messages using marked and DOMPurify
         function renderMessages() {
           messageStream.innerHTML = '';
           chatHistory.forEach(msg => {
@@ -237,6 +259,8 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
                 });
               }
               if (badgeRow.childNodes.length) msgDiv.appendChild(badgeRow);
+              // Render user message as plain text (no markdown)
+              msgDiv.textContent += msg.content;
             } else {
               msgDiv.style.alignSelf = 'flex-start';
               msgDiv.style.background = '#fff';
@@ -248,12 +272,26 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
               msgDiv.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
               msgDiv.style.fontSize = '1em';
               msgDiv.style.wordBreak = 'break-word';
+              // Debug: log if marked and DOMPurify are present
+              console.log('[LLM LibraryLoading] marked:', typeof window.marked, 'DOMPurify:', typeof window.DOMPurify);
+              // Render assistant message as sanitized HTML from markdown
+              if (window.marked && window.DOMPurify) {
+                const rawHtml = window.marked.parse(msg.content || '');
+                msgDiv.innerHTML = window.DOMPurify.sanitize(rawHtml);
+              } else {
+                // Fallback: plain text
+                msgDiv.textContent = msg.content;
+              }
             }
-            msgDiv.textContent += msg.content;
             messageStream.appendChild(msgDiv);
           });
           messageStream.scrollTop = messageStream.scrollHeight;
         }
+
+        // Ensure marked and DOMPurify are loaded before first render
+        injectScriptIfNeeded('libs/marked/marked.umd.js', 'marked', () => {
+          injectScriptIfNeeded('libs/DOMpurify/purify.js', 'DOMPurify', renderMessages);
+        });
       // After messageStream and chatHistory are initialized, render chat history
       renderMessages();
       // Ensure scroll to bottom after DOM update
