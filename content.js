@@ -1,12 +1,60 @@
+// Listen for sanitizeMarkdown requests from the page context via window.postMessage
+window.addEventListener('message', (event) => {
+  // Only accept messages from the same origin for security
+  if (event.source !== window || !event.data || event.data.action !== 'sanitizeMarkdown') return;
+  //console.log('[content.js] window.postMessage sanitizeMarkdown received:', event.data.markdown);
+  let sanitizedHtml = event.data.markdown;
+  console.log('[content.js] window.marked:', window.marked, 'window.DOMPurify:', window.DOMPurify);
+  if (window.marked && window.DOMPurify) {
+    try {
+      const rawHtml = window.marked.parse(event.data.markdown);
+      sanitizedHtml = window.DOMPurify.sanitize(rawHtml);
+      console.log('[content.js] Markdown parsed and sanitized via postMessage');
+    } catch (e) {
+      sanitizedHtml = 'Error: Could not parse markdown.';
+      console.error('[content.js] Error parsing markdown via postMessage:', e);
+    }
+  } else {
+    console.warn('[content.js] marked or DOMPurify not available via postMessage');
+  }
+  // Respond back to the page context
+  window.postMessage({ action: 'sanitizedMarkdown', html: sanitizedHtml, requestId: event.data.requestId }, '*');
+  //console.log('[content.js] window.postMessage sanitizedMarkdown sent:', sanitizedHtml);
+});
 // Listen for OLLAMA status change notifications from background
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('[content.js] onMessage received:', message);
   if (message.action === 'ollamaStatusChanged' && message.status === 'connected') {
     // Update the status indicator in the panel if it exists
     const statusDot = document.getElementById('ollama-status-dot');
     const statusText = document.getElementById('ollama-status-text');
     if (statusDot) statusDot.textContent = '🟢';
     if (statusText) statusText.textContent = 'Connected to OLLAMA';
+    console.log('[content.js] OLLAMA status updated');
   }
+
+  // Handle markdown sanitization requests from the page context
+  if (message.action === 'sanitizeMarkdown' && typeof message.markdown === 'string') {
+    console.log('[content.js] sanitizeMarkdown request received:', message.markdown);
+    let sanitizedHtml = message.markdown;
+    if (window.marked && window.DOMPurify) {
+      try {
+        const rawHtml = window.marked.parse(message.markdown);
+        sanitizedHtml = window.DOMPurify.sanitize(rawHtml);
+        console.log('[content.js] Markdown parsed and sanitized');
+      } catch (e) {
+        sanitizedHtml = 'Error: Could not parse markdown.';
+        console.error('[content.js] Error parsing markdown:', e);
+      }
+    } else {
+      console.warn('[content.js] marked or DOMPurify not available');
+    }
+    sendResponse({ html: sanitizedHtml });
+    console.log('[content.js] sendResponse called with:', sanitizedHtml);
+  }
+  // Always return true to keep the port open for async responses
+  console.log('[content.js] onMessage returning true to keep port open');
+  return true;
 });
 // Content script: Extracts DOM, CSS, and JS from the current page
 
@@ -205,26 +253,26 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         }
         // --- Inject marked and DOMPurify if not already present ---
         // Injects an external script into the page's main world (no inline code)
-        function injectScriptIfNeeded(src, globalName, callback) {
-          if (window[globalName]) {
-            console.log(`[LLM LibraryLoading] ${globalName} already present on window.`);
-            callback();
-            return;
-          }
-          const script = document.createElement('script');
-          script.src = chrome.runtime.getURL(src);
-          script.onload = () => {
-            console.log(`[LLM LibraryLoading] Loaded script: ${src}, window.${globalName}:`, typeof window[globalName]);
-            callback();
-          };
-          script.onerror = (e) => {
-            console.error(`[LLM LibraryLoading] Failed to load script: ${src}`, e);
-          };
-          (document.documentElement || document.head).appendChild(script);
-          console.log(`[LLM LibraryLoading] Injecting script: ${src}`);
-        }
+        // function injectScriptIfNeeded(src, globalName, callback) { THIS IS NOW DONE ON BACKGROUNDJS
+        //   if (window[globalName]) {
+        //     console.log(`[LLM LibraryLoading] ${globalName} already present on window.`);
+        //     callback();
+        //     return;
+        //   }
+        //   const script = document.createElement('script');
+        //   script.src = chrome.runtime.getURL(src);
+        //   script.onload = () => {
+        //     console.log(`[LLM LibraryLoading] Loaded script: ${src}, window.${globalName}:`, typeof window[globalName]);
+        //     callback();
+        //   };
+        //   script.onerror = (e) => {
+        //     console.error(`[LLM LibraryLoading] Failed to load script: ${src}`, e);
+        //   };
+        //   (document.documentElement || document.head).appendChild(script);
+        //   console.log(`[LLM LibraryLoading] Injecting script: ${src}`);
+        // }
 
-        // Render messages using marked and DOMPurify
+        // Render messages using chrome.runtime.sendMessage for markdown sanitization
         function renderMessages() {
           messageStream.innerHTML = '';
           chatHistory.forEach(msg => {
@@ -261,6 +309,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
               if (badgeRow.childNodes.length) msgDiv.appendChild(badgeRow);
               // Render user message as plain text (no markdown)
               msgDiv.textContent += msg.content;
+              messageStream.appendChild(msgDiv);
             } else {
               msgDiv.style.alignSelf = 'flex-start';
               msgDiv.style.background = '#fff';
@@ -272,26 +321,27 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
               msgDiv.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
               msgDiv.style.fontSize = '1em';
               msgDiv.style.wordBreak = 'break-word';
-              // Debug: log if marked and DOMPurify are present
-              console.log('[LLM LibraryLoading] marked:', typeof window.marked, 'DOMPurify:', typeof window.DOMPurify);
-              // Render assistant message as sanitized HTML from markdown
-              if (window.marked && window.DOMPurify) {
-                const rawHtml = window.marked.parse(msg.content || '');
-                msgDiv.innerHTML = window.DOMPurify.sanitize(rawHtml);
-              } else {
-                // Fallback: plain text
-                msgDiv.textContent = msg.content;
+              // Use window.postMessage to sanitize markdown
+              const requestId = 'msg-' + Math.random().toString(36).substr(2, 9);
+              window.postMessage({ action: 'sanitizeMarkdown', markdown: msg.content || '', requestId }, '*');
+              function handleSanitizedMessage(event) {
+                if (event.source !== window || !event.data || event.data.action !== 'sanitizedMarkdown') return;
+                if (event.data.requestId === requestId) {
+                  msgDiv.innerHTML = event.data.html;
+                  messageStream.appendChild(msgDiv);
+                  messageStream.scrollTop = messageStream.scrollHeight;
+                  window.removeEventListener('message', handleSanitizedMessage);
+                }
               }
+              window.addEventListener('message', handleSanitizedMessage);
             }
-            messageStream.appendChild(msgDiv);
           });
-          messageStream.scrollTop = messageStream.scrollHeight;
         }
 
         // Ensure marked and DOMPurify are loaded before first render
-        injectScriptIfNeeded('libs/marked/marked.umd.js', 'marked', () => {
-          injectScriptIfNeeded('libs/DOMpurify/purify.js', 'DOMPurify', renderMessages);
-        });
+        // injectScriptIfNeeded('libs/marked/marked.umd.js', 'marked', () => {
+        //   injectScriptIfNeeded('libs/DOMpurify/purify.js', 'DOMPurify', renderMessages); THIS IS NOW DONE ON BACKGROUNDJS
+        // });
       // After messageStream and chatHistory are initialized, render chat history
       renderMessages();
       // Ensure scroll to bottom after DOM update

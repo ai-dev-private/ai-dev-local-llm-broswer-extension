@@ -36,7 +36,11 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": [
+        "libs/marked/marked.umd.js",
+        "libs/DOMpurify/purify.js",
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
