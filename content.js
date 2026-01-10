@@ -193,6 +193,33 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         margin: 0 4px 0 0;
         vertical-align: middle;
       }
+      /* Restore markdown formatting */
+      .llm-extension-panel b,
+      .llm-extension-panel strong {
+        font-weight: bold;
+      }
+      .llm-extension-panel em,
+      .llm-extension-panel i {
+        font-style: italic;
+      }
+      .llm-extension-panel code {
+        font-family: monospace;
+        background: #f4f4f4;
+        padding: 2px 4px;
+        border-radius: 3px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .llm-extension-panel pre {
+        display: block;
+        white-space: pre;
+        font-family: monospace;
+        background: #f4f4f4;
+        padding: 8px;
+        border-radius: 4px;
+        overflow-x: auto;
+        margin: 0.5em 0;
+      }
     `;
     document.head.appendChild(style);
   }
