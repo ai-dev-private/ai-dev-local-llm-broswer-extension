@@ -142,8 +142,8 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
   panelDiv.style.top = '20px';
   panelDiv.style.left = 'unset';
   panelDiv.style.right = '20px';
-  panelDiv.style.width = '420px';
-  panelDiv.style.height = '90vh';
+  panelDiv.style.width = '840px';
+  panelDiv.style.height = '95vh';
   panelDiv.style.background = 'white';
   panelDiv.style.border = '2px solid #888';
   panelDiv.style.zIndex = '999999';
@@ -219,6 +219,26 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         border-radius: 4px;
         overflow-x: auto;
         margin: 0.5em 0;
+      }
+      /* List formatting for markdown */
+      .llm-extension-panel ul,
+      .llm-extension-panel ol {
+        all: unset;
+        display: block;
+        margin: 1em 0 1em 1.5em;
+        padding-left: 1.5em;
+      }
+      .llm-extension-panel ul {
+        list-style-type: disc;
+      }
+      .llm-extension-panel ol {
+        list-style-type: decimal;
+      }
+      .llm-extension-panel li {
+        all: unset;
+        display: list-item;
+        margin: 0.25em 0;
+        padding-left: 0.5em;
       }
     `;
     document.head.appendChild(style);
@@ -339,7 +359,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
               messageStream.appendChild(msgDiv);
             } else {
               msgDiv.style.alignSelf = 'flex-start';
-              msgDiv.style.background = '#fff';
+                msgDiv.style.background = '#d4f8e5'; // green bubble
               msgDiv.style.color = '#222';
               msgDiv.style.borderRadius = '16px 16px 16px 4px';
               msgDiv.style.padding = '10px 14px';
