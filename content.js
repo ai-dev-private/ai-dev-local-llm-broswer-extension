@@ -322,7 +322,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         // Render messages using chrome.runtime.sendMessage for markdown sanitization
         function renderMessages() {
           messageStream.innerHTML = '';
-          chatHistory.forEach(msg => {
+          chatHistory.forEach((msg, idx) => {
             const msgDiv = document.createElement('div');
             if (msg.role === 'user') {
               msgDiv.style.alignSelf = 'flex-end';
@@ -359,7 +359,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
               messageStream.appendChild(msgDiv);
             } else {
               msgDiv.style.alignSelf = 'flex-start';
-                msgDiv.style.background = '#d4f8e5'; // green bubble
+              msgDiv.style.background = '#d4f8e5'; // green bubble
               msgDiv.style.color = '#222';
               msgDiv.style.borderRadius = '16px 16px 16px 4px';
               msgDiv.style.padding = '10px 14px';
@@ -375,12 +375,15 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
                 if (event.source !== window || !event.data || event.data.action !== 'sanitizedMarkdown') return;
                 if (event.data.requestId === requestId) {
                   msgDiv.innerHTML = event.data.html;
-                  messageStream.appendChild(msgDiv);
+                  // Only replace the content, do not append again
+                  // messageStream.appendChild(msgDiv); // Already appended in order below
                   messageStream.scrollTop = messageStream.scrollHeight;
                   window.removeEventListener('message', handleSanitizedMessage);
                 }
               }
               window.addEventListener('message', handleSanitizedMessage);
+              // Append the div in order, content will be filled in by sanitizer
+              messageStream.appendChild(msgDiv);
             }
           });
         }
