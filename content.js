@@ -324,49 +324,87 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         function renderMessages() {
           messageStream.innerHTML = '';
           chatHistory.forEach((msg, idx) => {
-            // Group thinking bubble with assistant message if present
-            if (msg.role === 'assistant' && msg.thinking) {
-              // Render thinking bubble (collapsible)
-              const thinkingDiv = document.createElement('div');
-              thinkingDiv.className = 'llm-thinking-bubble';
-              thinkingDiv.style.alignSelf = 'flex-start';
-              thinkingDiv.style.background = '#f5f5c6';
-              thinkingDiv.style.color = '#444';
-              thinkingDiv.style.borderRadius = '16px 16px 16px 4px';
-              thinkingDiv.style.maxWidth = '80%';
-              thinkingDiv.style.margin = '2px 0';
-              thinkingDiv.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
-              thinkingDiv.style.fontSize = '1em';
-              thinkingDiv.style.wordBreak = 'break-word';
-              thinkingDiv.style.cursor = 'pointer';
-              // Collapsible logic
-              let expanded = false;
-              function setThinkingState(isExpanded) {
-                if (isExpanded) {
-                  thinkingDiv.textContent = msg.thinking || 'Thinking...';
-                  thinkingDiv.style.padding = '10px 14px';
-                  thinkingDiv.style.opacity = '1';
-                  thinkingDiv.style.height = '';
-                  thinkingDiv.style.overflow = '';
-                  thinkingDiv.title = 'Click to collapse';
-                } else {
-                  thinkingDiv.textContent = '💡 Show thinking';
-                  thinkingDiv.style.padding = '2px 10px';
-                  thinkingDiv.style.opacity = '0.7';
-                  thinkingDiv.style.height = '1.5em';
-                  thinkingDiv.style.overflow = 'hidden';
-                  thinkingDiv.title = 'Click to expand';
+            const msgDiv = document.createElement('div');
+            if (msg.role === 'assistant') {
+              msgDiv.style.alignSelf = 'flex-start';
+              msgDiv.style.background = '#d4f8e5'; // green bubble
+              msgDiv.style.color = '#222';
+              msgDiv.style.borderRadius = '16px 16px 16px 4px';
+              msgDiv.style.padding = '10px 14px';
+              msgDiv.style.maxWidth = '80%';
+              msgDiv.style.margin = '2px 0';
+              msgDiv.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+              msgDiv.style.fontSize = '1em';
+              msgDiv.style.wordBreak = 'break-word';
+              // If thinking, prepend collapsible section
+              if (msg.thinking) {
+                const thinkingDiv = document.createElement('div');
+                thinkingDiv.className = 'llm-thinking-bubble';
+                thinkingDiv.style.background = '#f5f5c6';
+                thinkingDiv.style.color = '#444';
+                thinkingDiv.style.borderRadius = '12px 12px 12px 4px';
+                thinkingDiv.style.marginBottom = '8px';
+                thinkingDiv.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+                thinkingDiv.style.fontSize = '0.98em';
+                thinkingDiv.style.wordBreak = 'break-word';
+                thinkingDiv.style.cursor = 'pointer';
+                let expanded = false;
+                function setThinkingState(isExpanded) {
+                  if (isExpanded) {
+                    thinkingDiv.textContent = msg.thinking || 'Thinking...';
+                    thinkingDiv.style.padding = '10px 14px 14px 14px';
+                    thinkingDiv.style.opacity = '1';
+                    thinkingDiv.style.height = 'auto';
+                    thinkingDiv.style.minHeight = '0';
+                    thinkingDiv.style.maxHeight = 'none';
+                    thinkingDiv.style.display = 'block';
+                    thinkingDiv.style.overflow = 'visible';
+                    thinkingDiv.style.whiteSpace = 'pre-wrap';
+                    thinkingDiv.style.lineHeight = '1.5';
+                    thinkingDiv.title = 'Click to collapse';
+                  } else {
+                    thinkingDiv.textContent = '💡 Show thinking';
+                    thinkingDiv.style.padding = '2px 10px';
+                    thinkingDiv.style.opacity = '0.7';
+                    thinkingDiv.style.height = '1.5em';
+                    thinkingDiv.style.minHeight = '';
+                    thinkingDiv.style.maxHeight = '';
+                    thinkingDiv.style.display = '';
+                    thinkingDiv.style.overflow = 'hidden';
+                    thinkingDiv.style.whiteSpace = '';
+                    thinkingDiv.style.lineHeight = '';
+                    thinkingDiv.title = 'Click to expand';
+                  }
+                }
+                setThinkingState(expanded);
+                thinkingDiv.onclick = () => {
+                  expanded = !expanded;
+                  setThinkingState(expanded);
+                };
+                msgDiv.appendChild(thinkingDiv);
+              }
+              // Use window.postMessage to sanitize markdown
+              const requestId = 'msg-' + Math.random().toString(36).substr(2, 9);
+              window.postMessage({ action: 'sanitizeMarkdown', markdown: msg.content || '', requestId }, '*');
+              function handleSanitizedMessage(event) {
+                if (event.source !== window || !event.data || event.data.action !== 'sanitizedMarkdown') return;
+                if (event.data.requestId === requestId) {
+                  // Insert after thinkingDiv if present, else at top
+                  const contentDiv = document.createElement('div');
+                  contentDiv.innerHTML = event.data.html;
+                  if (msgDiv.firstChild && msgDiv.firstChild.className === 'llm-thinking-bubble') {
+                    msgDiv.appendChild(contentDiv);
+                  } else {
+                    msgDiv.innerHTML = event.data.html;
+                  }
+                  messageStream.scrollTop = messageStream.scrollHeight;
+                  window.removeEventListener('message', handleSanitizedMessage);
                 }
               }
-              setThinkingState(expanded);
-              thinkingDiv.onclick = () => {
-                expanded = !expanded;
-                setThinkingState(expanded);
-              };
-              messageStream.appendChild(thinkingDiv);
+              window.addEventListener('message', handleSanitizedMessage);
+              messageStream.appendChild(msgDiv);
+              return;
             }
-            // ...existing code...
-            const msgDiv = document.createElement('div');
             if (msg.role === 'user') {
               msgDiv.style.alignSelf = 'flex-end';
               msgDiv.style.background = '#007aff';
@@ -553,6 +591,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     if (includeThink) requestBody.think = true;
     let thinkingIndex = -1;
     chrome.runtime.sendMessage({ action: 'ollamaGenerate', body: requestBody }, (result) => {
+        console.log('[llm] Ollama result object:', result);
       let llmContent = '';
       const DEBUG_OLLAMA_RESPONSE = true;
       if (DEBUG_OLLAMA_RESPONSE) {
@@ -582,15 +621,20 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
       }
       console.log('[llm] Before update, assistantMsg:', assistantMsg);
       if (assistantMsg) {
+        console.log('[llm] Update assistantMsg at index:', llmIndex);
+        console.log('[llm] result.message:', result.message);
+        console.log('[llm] chatHistory before update:', JSON.parse(JSON.stringify(chatHistory)));
         assistantMsg.content = llmContent;
         assistantMsg.uiOnly = false;
-        if (result && result.thinking) {
-          assistantMsg.thinking = result.thinking;
+        if (result && result.message && typeof result.message.thinking !== 'undefined') {
+          assistantMsg.thinking = result.message.thinking;
           console.log('[llm] Set thinking on assistantMsg:', assistantMsg.thinking);
         } else {
           delete assistantMsg.thinking;
         }
         console.log('[llm] After update, assistantMsg:', assistantMsg);
+        console.log('[llm] After update, assistantMsg keys:', Object.keys(assistantMsg));
+        console.log('[llm] After update, full chatHistory:', JSON.parse(JSON.stringify(chatHistory)));
       } else {
         console.warn('[llm] No assistant message found to update!');
       }
