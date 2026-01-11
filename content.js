@@ -538,7 +538,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     }
     if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
       // Print chatHistory to the console for debugging
-      // console.log('[llm] chatHistory:', chatHistory);
+      console.log('[llm] chatHistory:', chatHistory);
       e.preventDefault();
     }
   }
@@ -583,11 +583,14 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     const llmIndex = chatHistory.length - 1;
     // Build messages array for Ollama, filtering out UI-only placeholders
     // When sending to LLM, do not include 'thinking' property or any 'thinking' messages
-    const messages = chatHistory
+    let messages = chatHistory
       .filter(m => !m.uiOnly && m.role !== 'thinking')
       .map(m => ({ role: m.role, content: m.content }));
+    // Prepend HTML to the user message content (not in chatHistory)
+    if (includeHTML && html && messages.length > 0 && messages[0].role === 'user') {
+      messages[0].content = html + '\n\n' + messages[0].content;
+    }
     const requestBody = { model, messages, stream: false };
-    if (includeHTML) requestBody.html = html;
     if (includeCSS) requestBody.css = css;
     if (includeJS) requestBody.js = js;
     if (includeThink) requestBody.think = true;
