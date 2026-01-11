@@ -4,12 +4,12 @@ window.addEventListener('message', (event) => {
   if (event.source !== window || !event.data || event.data.action !== 'sanitizeMarkdown') return;
   //console.log('[content.js] window.postMessage sanitizeMarkdown received:', event.data.markdown);
   let sanitizedHtml = event.data.markdown;
-  console.log('[content.js] window.marked:', window.marked, 'window.DOMPurify:', window.DOMPurify);
+  // console.log('[content.js] window.marked:', window.marked, 'window.DOMPurify:', window.DOMPurify);
   if (window.marked && window.DOMPurify) {
     try {
       const rawHtml = window.marked.parse(event.data.markdown);
       sanitizedHtml = window.DOMPurify.sanitize(rawHtml);
-      console.log('[content.js] Markdown parsed and sanitized via postMessage');
+      // console.log('[content.js] Markdown parsed and sanitized via postMessage');
     } catch (e) {
       sanitizedHtml = 'Error: Could not parse markdown.';
       console.error('[content.js] Error parsing markdown via postMessage:', e);
@@ -23,25 +23,25 @@ window.addEventListener('message', (event) => {
 });
 // Listen for OLLAMA status change notifications from background
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('[content.js] onMessage received:', message);
+  // console.log('[content.js] onMessage received:', message);
   if (message.action === 'ollamaStatusChanged' && message.status === 'connected') {
     // Update the status indicator in the panel if it exists
     const statusDot = document.getElementById('ollama-status-dot');
     const statusText = document.getElementById('ollama-status-text');
     if (statusDot) statusDot.textContent = '🟢';
     if (statusText) statusText.textContent = 'Connected to OLLAMA';
-    console.log('[content.js] OLLAMA status updated');
+    // console.log('[content.js] OLLAMA status updated');
   }
 
   // Handle markdown sanitization requests from the page context
   if (message.action === 'sanitizeMarkdown' && typeof message.markdown === 'string') {
-    console.log('[content.js] sanitizeMarkdown request received:', message.markdown);
+    // console.log('[content.js] sanitizeMarkdown request received:', message.markdown);
     let sanitizedHtml = message.markdown;
     if (window.marked && window.DOMPurify) {
       try {
         const rawHtml = window.marked.parse(message.markdown);
         sanitizedHtml = window.DOMPurify.sanitize(rawHtml);
-        console.log('[content.js] Markdown parsed and sanitized');
+        // console.log('[content.js] Markdown parsed and sanitized');
       } catch (e) {
         sanitizedHtml = 'Error: Could not parse markdown.';
         console.error('[content.js] Error parsing markdown:', e);
@@ -50,10 +50,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.warn('[content.js] marked or DOMPurify not available');
     }
     sendResponse({ html: sanitizedHtml });
-    console.log('[content.js] sendResponse called with:', sanitizedHtml);
+    // console.log('[content.js] sendResponse called with:', sanitizedHtml);
   }
   // Always return true to keep the port open for async responses
-  console.log('[content.js] onMessage returning true to keep port open');
+  // console.log('[content.js] onMessage returning true to keep port open');
   return true;
 });
 // Content script: Extracts DOM, CSS, and JS from the current page
@@ -125,10 +125,10 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     }
     window.addEventListener('keydown', handlePanelCheckboxShortcuts);
     // Remove the event listener when panel is closed
-  console.log('[content.js] createLLMPanel called');
+  // console.log('[content.js] createLLMPanel called');
   let panelDiv = document.getElementById('llm-extension-panel');
   if (panelDiv) {
-    console.log('[content.js] Panel already exists, removing it');
+    // console.log('[content.js] Panel already exists, removing it');
     panelDiv.remove();
     return;
   }
@@ -245,12 +245,14 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
   }
   panelDiv.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;font-family:Arial,sans-serif;color:#222;gap:6px;">
-      <span id="ollama-status" style="font-size:0.78em;display:flex;align-items:center;gap:4px;white-space:nowrap;">
-        <span id="ollama-status-dot">⚪</span>
-        <span id="ollama-status-text">OLLAMA connected</span>
-      </span>
-      <label for="llm-model-select" style="font-size:0.95em;color:#222;margin:0 4px 0 8px;white-space:nowrap;">Model:</label>
-      <select id="llm-model-select" style="font-size:1em;padding:2px 8px;border-radius:4px;border:1px solid #bbb;margin-right:8px;max-width:120px;"></select>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="ollama-status" style="font-size:0.78em;display:flex;align-items:center;gap:4px;white-space:nowrap;">
+          <span id="ollama-status-dot">⚪</span>
+          <span id="ollama-status-text">OLLAMA connected</span>
+        </span>
+        <label for="llm-model-select" style="font-size:0.95em;color:#222;margin:0 4px 0 8px;white-space:nowrap;">Model:</label>
+        <select id="llm-model-select" style="font-size:1em;padding:2px 8px;border-radius:4px;border:1px solid #bbb;max-width:120px;"></select>
+      </div>
       <button id="llm-panel-close" style="font-size:0.85em;background:#f5f5f5;border:1px solid #bbb;border-radius:4px;padding:1px 5px;cursor:pointer;color:#222;line-height:1;">✖</button>
     </div>
     <div style="height:2px;"></div>
@@ -264,14 +266,14 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
       <span style="font-size:0.85em;color:#888;">Include in prompt</span>
       <span 
         style="display:flex;align-items:center;gap:6px;cursor:help;font-size:0.95em;"
-        title="[Shift+Enter] = focus\n[Ctrl+Enter] = submit\n[Alt+Z] = toggle HTML\n[Alt+X] = toggle CSS\n[Alt+C] = toggle JS"
+        title="[Ctrl+Enter] = focus\n[Shift+Enter] = submit\n[Alt+Z] = toggle HTML\n[Alt+X] = toggle CSS\n[Alt+C] = toggle JS"
       >
         <span>Keybinds</span>
         <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:#e0e0e0;color:#555;text-align:center;line-height:16px;font-weight:bold;margin-left:2px;">?</span>
       </span>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:8px;">
-      <button id="llm-panel-send" style="flex:1 1 auto;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;">Send</button>
+      <button id="llm-panel-send" style="flex:1 1 auto;background:#e0e0e0;border:1px solid #bbb;border-radius:4px;padding:8px 0;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#222;text-align:center;">Send <span style='font-size:0.85em;color:#888;'>(Shift+Enter)</span></button>
       <button id="llm-panel-clear" style="flex:0 0 auto;background:#fff0f0;border:1px solid #e88;border-radius:4px;padding:8px 12px;font-family:Arial,sans-serif;font-size:1em;cursor:pointer;color:#a00;">Clear Chat</button>
     </div>
     `;
@@ -536,14 +538,14 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     }
     if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
       // Print chatHistory to the console for debugging
-      console.log('[llm] chatHistory:', chatHistory);
+      // console.log('[llm] chatHistory:', chatHistory);
       e.preventDefault();
     }
   }
   window.addEventListener('keydown', globalKeyHandler);
 
   document.getElementById('llm-panel-close').onclick = () => {
-    console.log('[content.js] Panel closed');
+    // console.log('[content.js] Panel closed');
     panelDiv.remove();
     window.removeEventListener('keydown', globalKeyHandler);
     window.removeEventListener('keydown', handlePanelCheckboxShortcuts);
@@ -569,7 +571,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     if (includeCSS) userMsg.badges.push('CSS');
     if (includeJS) userMsg.badges.push('JS');
     chatHistory.push(userMsg);
-    console.log('[llm] Added user message:', userMsg);
+    // console.log('[llm] Added user message:', userMsg);
     saveHistory();
     renderMessages();
     promptTextarea.value = '';
@@ -591,7 +593,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     if (includeThink) requestBody.think = true;
     let thinkingIndex = -1;
     chrome.runtime.sendMessage({ action: 'ollamaGenerate', body: requestBody }, (result) => {
-        console.log('[llm] Ollama result object:', result);
+        // console.log('[llm] Ollama result object:', result);
       let llmContent = '';
       const DEBUG_OLLAMA_RESPONSE = true;
       if (DEBUG_OLLAMA_RESPONSE) {
