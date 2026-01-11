@@ -260,6 +260,7 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
       <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-html" style="margin-right:4px;">HTML</label>
       <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-css" style="margin-right:4px;">CSS</label>
       <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-js" style="margin-right:4px;">JS</label>
+      <label style="font-size:0.95em;"><input type="checkbox" id="llm-include-think" style="margin-right:4px;">Think</label>
       <span style="font-size:0.85em;color:#888;">Include in prompt</span>
       <span 
         style="display:flex;align-items:center;gap:6px;cursor:help;font-size:0.95em;"
@@ -323,6 +324,48 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
         function renderMessages() {
           messageStream.innerHTML = '';
           chatHistory.forEach((msg, idx) => {
+            // Group thinking bubble with assistant message if present
+            if (msg.role === 'assistant' && msg.thinking) {
+              // Render thinking bubble (collapsible)
+              const thinkingDiv = document.createElement('div');
+              thinkingDiv.className = 'llm-thinking-bubble';
+              thinkingDiv.style.alignSelf = 'flex-start';
+              thinkingDiv.style.background = '#f5f5c6';
+              thinkingDiv.style.color = '#444';
+              thinkingDiv.style.borderRadius = '16px 16px 16px 4px';
+              thinkingDiv.style.maxWidth = '80%';
+              thinkingDiv.style.margin = '2px 0';
+              thinkingDiv.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+              thinkingDiv.style.fontSize = '1em';
+              thinkingDiv.style.wordBreak = 'break-word';
+              thinkingDiv.style.cursor = 'pointer';
+              // Collapsible logic
+              let expanded = false;
+              function setThinkingState(isExpanded) {
+                if (isExpanded) {
+                  thinkingDiv.textContent = msg.thinking || 'Thinking...';
+                  thinkingDiv.style.padding = '10px 14px';
+                  thinkingDiv.style.opacity = '1';
+                  thinkingDiv.style.height = '';
+                  thinkingDiv.style.overflow = '';
+                  thinkingDiv.title = 'Click to collapse';
+                } else {
+                  thinkingDiv.textContent = '💡 Show thinking';
+                  thinkingDiv.style.padding = '2px 10px';
+                  thinkingDiv.style.opacity = '0.7';
+                  thinkingDiv.style.height = '1.5em';
+                  thinkingDiv.style.overflow = 'hidden';
+                  thinkingDiv.title = 'Click to expand';
+                }
+              }
+              setThinkingState(expanded);
+              thinkingDiv.onclick = () => {
+                expanded = !expanded;
+                setThinkingState(expanded);
+              };
+              messageStream.appendChild(thinkingDiv);
+            }
+            // ...existing code...
             const msgDiv = document.createElement('div');
             if (msg.role === 'user') {
               msgDiv.style.alignSelf = 'flex-end';
@@ -410,6 +453,11 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
             opt.textContent = model;
             modelSelect.appendChild(opt);
           });
+          // Restore last selected model from localStorage if available
+          const lastModel = localStorage.getItem('llmLastModel');
+          if (lastModel && response.models.includes(lastModel)) {
+            modelSelect.value = lastModel;
+          }
         } else {
           modelSelect.innerHTML = '<option>Error loading models</option>';
         }
@@ -433,19 +481,25 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     promptTextarea.focus();
   }
 
-  // Global keydown handler for Shift+Enter (focus) and Ctrl+Enter (send)
+
+  // Global keydown handler for Shift+Enter (focus), Ctrl+Enter (send), and Ctrl+M (log chatHistory)
   function globalKeyHandler(e) {
-    if (e.shiftKey && e.key === 'Enter') {
+    if (e.ctrlKey && e.key === 'Enter') {
       if (promptTextarea) {
         promptTextarea.focus();
         e.preventDefault();
       }
     }
-    if (e.ctrlKey && e.key === 'Enter') {
+    if (e.shiftKey && e.key === 'Enter') {
       if (promptTextarea) {
         document.getElementById('llm-panel-send').click();
         e.preventDefault();
       }
+    }
+    if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+      // Print chatHistory to the console for debugging
+      console.log('[llm] chatHistory:', chatHistory);
+      e.preventDefault();
     }
   }
   window.addEventListener('keydown', globalKeyHandler);
@@ -468,6 +522,9 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     const css = includeCSS ? getPageCSS() : undefined;
     const js = includeJS ? getPageJS() : undefined;
     const model = modelSelect.value;
+    // Save last selected model to localStorage
+    localStorage.setItem('llmLastModel', model);
+    const includeThink = document.getElementById('llm-include-think').checked;
     // Add user message to chat history and render
     const userMsg = { role: 'user', content: prompt, badges: [] };
     if (includeHTML) userMsg.badges.push('HTML');
@@ -479,20 +536,28 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
     renderMessages();
     promptTextarea.value = '';
     // Add a placeholder for LLM response
-    const llmMsg = { role: 'assistant', content: '⏳ Waiting for response...' };
+    const llmMsg = { role: 'assistant', content: '⏳ Waiting for response...', uiOnly: true };
     chatHistory.push(llmMsg);
-    console.log('[llm] Added LLM placeholder message:', llmMsg);
     saveHistory();
     renderMessages();
     const llmIndex = chatHistory.length - 1;
-    // Build messages array for Ollama
-    const messages = chatHistory.map(m => ({ role: m.role, content: m.content }));
+    // Build messages array for Ollama, filtering out UI-only placeholders
+    // When sending to LLM, do not include 'thinking' property or any 'thinking' messages
+    const messages = chatHistory
+      .filter(m => !m.uiOnly && m.role !== 'thinking')
+      .map(m => ({ role: m.role, content: m.content }));
     const requestBody = { model, messages, stream: false };
     if (includeHTML) requestBody.html = html;
     if (includeCSS) requestBody.css = css;
     if (includeJS) requestBody.js = js;
+    if (includeThink) requestBody.think = true;
+    let thinkingIndex = -1;
     chrome.runtime.sendMessage({ action: 'ollamaGenerate', body: requestBody }, (result) => {
       let llmContent = '';
+      const DEBUG_OLLAMA_RESPONSE = true;
+      if (DEBUG_OLLAMA_RESPONSE) {
+        console.log('[content.js] OLLAMA full response:', result);
+      }
       if (chrome.runtime.lastError) {
         llmContent = 'Error: ' + chrome.runtime.lastError.message;
       } else if (result && result.message && result.message.content) {
@@ -504,11 +569,33 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
       } else {
         llmContent = 'Unknown error or no response.';
       }
-      chatHistory[llmIndex].content = llmContent;
-      console.log('[llm] Updated LLM message:', chatHistory[llmIndex]);
+      // Find the assistant placeholder (uiOnly) and replace its content, clear uiOnly, and attach thinking if present
+      let assistantMsg = null;
+      if (chatHistory[llmIndex] && chatHistory[llmIndex].role === 'assistant') {
+        assistantMsg = chatHistory[llmIndex];
+      } else {
+        // If the assistant placeholder was shifted, find the next assistant
+        const nextAssistantIdx = chatHistory.findIndex((m, i) => i > llmIndex && m.role === 'assistant');
+        if (nextAssistantIdx !== -1) {
+          assistantMsg = chatHistory[nextAssistantIdx];
+        }
+      }
+      console.log('[llm] Before update, assistantMsg:', assistantMsg);
+      if (assistantMsg) {
+        assistantMsg.content = llmContent;
+        assistantMsg.uiOnly = false;
+        if (result && result.thinking) {
+          assistantMsg.thinking = result.thinking;
+          console.log('[llm] Set thinking on assistantMsg:', assistantMsg.thinking);
+        } else {
+          delete assistantMsg.thinking;
+        }
+        console.log('[llm] After update, assistantMsg:', assistantMsg);
+      } else {
+        console.warn('[llm] No assistant message found to update!');
+      }
       saveHistory();
       renderMessages();
-      console.log('[content.js] OLLAMA response:', result);
     });
   };
 }

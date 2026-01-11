@@ -31,9 +31,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 // Format incoming data to Ollama chat API format
 function formatOllamaChatRequest(body) {
-  // If already in chat format, just return as-is
+  // If already in chat format, ensure 'think' is set based on UI flag
   if (body && body.model && Array.isArray(body.messages)) {
-    return body;
+    // Only set think if present in the body (from UI)
+    const { think, ...rest } = body;
+    return think !== undefined ? { ...rest, think } : rest;
   }
   // Otherwise, convert prompt/html/css/js to a single content string
   if (!body.model) {
@@ -44,7 +46,7 @@ function formatOllamaChatRequest(body) {
   if (body.html || body.css || body.js) {
     content += '\n\nHTML:\n' + (body.html || '') + '\n\nCSS:\n' + (body.css || '') + '\n\nJS:\n' + (body.js || '');
   }
-  return {
+  const result = {
     model,
     messages: [
       {
@@ -52,11 +54,10 @@ function formatOllamaChatRequest(body) {
         content
       }
     ],
-    stream: false,
-    options: {
-      think: true
-    }
+    stream: false
   };
+  if (body.think !== undefined) result.think = body.think;
+  return result;
 }
 import * as DEBUG_FLAGS from './globals.js';
 // Listen for OLLAMA status check requests from content scripts
@@ -89,10 +90,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const url = endpoint + '/api/chat';
         const formattedBody = formatOllamaChatRequest(request.body);
         const stringifiedBody = JSON.stringify(formattedBody);
-        if (DEBUG_FLAGS.DEBUG_OLLAMA_REQUEST) {
-          console.log('[Ollama Debug] Request URL:', url);
-          console.log('[Ollama Debug] Request Body:', stringifiedBody);
-        }
+        // Always log the outgoing request for debugging
+        console.log('[Ollama Debug] Request URL:', url);
+        console.log('[Ollama Debug] Request Body:', stringifiedBody);
         fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -145,29 +145,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Indicate async response
     return true;
   }
-  if (request.action === 'ollamaChat') {
-    chrome.storage.sync.get(['ollamaEndpoint'], (result) => {
-      const endpoint = result.ollamaEndpoint || 'http://localhost:11434';
-      fetch(endpoint + '/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request.body)
-      })
-        .then(async (res) => {
-          let data;
-          try {
-            data = await res.json();
-          } catch (e) {
-            data = { error: 'Invalid JSON from Ollama' };
-          }
-          sendResponse(data);
-        })
-        .catch((err) => {
-          sendResponse({ error: err.message });
-        });
-    });
-    return true;
-  }
+  // Removed unused ollamaChat handler
 });
 // Background script for handling extension events and communication
 chrome.runtime.onInstalled.addListener(() => {
