@@ -418,12 +418,18 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
               msgDiv.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
               msgDiv.style.fontSize = '1em';
               msgDiv.style.wordBreak = 'break-word';
-              // Badge area for future use
-              const badgeRow = document.createElement('div');
-              badgeRow.style.display = 'flex';
-              badgeRow.style.gap = '6px';
-              badgeRow.style.marginBottom = '2px';
+              // Render user message as plain text (no markdown)
+              const contentSpan = document.createElement('span');
+              contentSpan.textContent = msg.content;
+              contentSpan.style.color = '#fff'; // Ensure white text for readability
+              msgDiv.appendChild(contentSpan);
+
+              // Render badges in a visually distinct row below the message
               if (msg.badges && msg.badges.length) {
+                const badgeRow = document.createElement('div');
+                badgeRow.style.display = 'flex';
+                badgeRow.style.gap = '6px';
+                badgeRow.style.marginTop = '4px';
                 msg.badges.forEach(badge => {
                   const badgeEl = document.createElement('span');
                   badgeEl.textContent = badge;
@@ -435,10 +441,8 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
                   badgeEl.style.marginRight = '4px';
                   badgeRow.appendChild(badgeEl);
                 });
+                msgDiv.appendChild(badgeRow);
               }
-              if (badgeRow.childNodes.length) msgDiv.appendChild(badgeRow);
-              // Render user message as plain text (no markdown)
-              msgDiv.textContent += msg.content;
               messageStream.appendChild(msgDiv);
             } else {
               msgDiv.style.alignSelf = 'flex-start';
