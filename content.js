@@ -621,24 +621,24 @@ function createLLMPanel({ getPageHTML, getPageCSS, getPageJS }) {
           assistantMsg = chatHistory[nextAssistantIdx];
         }
       }
-      console.log('[llm] Before update, assistantMsg:', assistantMsg);
+      // console.log('[llm] Before update, assistantMsg:', assistantMsg);
       if (assistantMsg) {
-        console.log('[llm] Update assistantMsg at index:', llmIndex);
-        console.log('[llm] result.message:', result.message);
-        console.log('[llm] chatHistory before update:', JSON.parse(JSON.stringify(chatHistory)));
+        // console.log('[llm] Update assistantMsg at index:', llmIndex);
+        // console.log('[llm] result.message:', result.message);
+        // console.log('[llm] chatHistory before update:', JSON.parse(JSON.stringify(chatHistory)));
         assistantMsg.content = llmContent;
         assistantMsg.uiOnly = false;
         if (result && result.message && typeof result.message.thinking !== 'undefined') {
           assistantMsg.thinking = result.message.thinking;
-          console.log('[llm] Set thinking on assistantMsg:', assistantMsg.thinking);
+          // console.log('[llm] Set thinking on assistantMsg:', assistantMsg.thinking);
         } else {
           delete assistantMsg.thinking;
         }
-        console.log('[llm] After update, assistantMsg:', assistantMsg);
-        console.log('[llm] After update, assistantMsg keys:', Object.keys(assistantMsg));
-        console.log('[llm] After update, full chatHistory:', JSON.parse(JSON.stringify(chatHistory)));
+        // console.log('[llm] After update, assistantMsg:', assistantMsg);
+        // console.log('[llm] After update, assistantMsg keys:', Object.keys(assistantMsg));
+        // console.log('[llm] After update, full chatHistory:', JSON.parse(JSON.stringify(chatHistory)));
       } else {
-        console.warn('[llm] No assistant message found to update!');
+        // console.warn('[llm] No assistant message found to update!');
       }
       saveHistory();
       renderMessages();
